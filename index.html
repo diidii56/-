@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>우리동네 조사단 | 주민 브리핑</title>
+<style>
+  :root{
+    --paper:#f4efe5;
+    --sheet:#fffdf8;
+    --ink:#1f2a2b;
+    --muted:#6d7775;
+    --teal:#1f6265;
+    --teal2:#2f7b7d;
+    --orange:#d98b3d;
+    --line:#d7d0c4;
+    --soft:#edf3f0;
+    --shadow:0 14px 30px rgba(34,45,45,.08);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    color:var(--ink);
+    background:
+      linear-gradient(rgba(31,98,101,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(31,98,101,.035) 1px, transparent 1px),
+      var(--paper);
+    background-size:24px 24px;
+    font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  }
+
+  .page{
+    max-width:690px;
+    margin:0 auto;
+    padding:18px 14px 56px;
+  }
+
+  .sheet{
+    background:var(--sheet);
+    border:1px solid #d9d0c3;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+
+  .sheet:before{
+    content:"";
+    position:absolute;
+    left:22px; top:0; bottom:0;
+    width:1px;
+    background:rgba(217,139,61,.28);
+    pointer-events:none;
+  }
+
+  .header{
+    min-height:72px;
+    padding:18px 20px 16px 38px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+  }
+
+  .brand{
+    font-weight:900;
+    color:var(--teal);
+    letter-spacing:-.04em;
+    font-size:16px;
+  }
+
+  .stamp{
+    border:2px solid var(--teal);
+    color:var(--teal);
+    padding:6px 10px 5px;
+    font-size:11px;
+    line-height:1.2;
+    font-weight:900;
+    transform:rotate(-3deg);
+    letter-spacing:.05em;
+  }
+
+  .hero{
+    padding:38px 24px 30px 38px;
+  }
+
+  .overline{
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.09em;
+    color:var(--orange);
+    margin-bottom:12px;
+  }
+
+  h1{
+    margin:0;
+    font-size:clamp(34px,7.4vw,52px);
+    line-height:1.15;
+    letter-spacing:-.065em;
+    font-weight:950;
+  }
+
+  h1 .pause{
+    display:block;
+    margin-top:14px;
+    color:var(--teal);
+  }
+
+  .intro{
+    margin-top:24px;
+    max-width:560px;
+    font-size:17px;
+    line-height:1.8;
+    color:#505b5a;
+    letter-spacing:-.025em;
+  }
+
+  .intro strong{color:var(--ink)}
+
+  .role-strip{
+    margin-top:26px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .role-old, .role-new{
+    padding:8px 11px;
+    font-size:12px;
+    font-weight:900;
+    border:1px solid var(--line);
+    background:#f6f2ea;
+  }
+
+  .role-old{
+    color:#7c8582;
+    text-decoration:line-through;
+  }
+  .role-new{
+    background:var(--teal);
+    color:white;
+    border-color:var(--teal);
+  }
+
+  .arrow{
+    color:#9a9f9d;
+    font-weight:800;
+  }
+
+  .notice{
+    margin:0 20px 0 38px;
+    border-top:1px dashed #c7beb1;
+    border-bottom:1px dashed #c7beb1;
+    padding:22px 0;
+  }
+
+  .notice .small{
+    color:#777;
+    font-size:12px;
+    font-weight:800;
+    margin-bottom:6px;
+    letter-spacing:.04em;
+  }
+
+  .notice .big{
+    font-size:25px;
+    line-height:1.5;
+    font-weight:950;
+    letter-spacing:-.045em;
+  }
+
+  .notice .big b{color:var(--orange)}
+
+  .question-area{
+    padding:30px 20px 10px 38px;
+  }
+
+  .section-head{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+  }
+
+  .section-title{
+    margin:0;
+    font-size:18px;
+    font-weight:950;
+    letter-spacing:-.04em;
+  }
+
+  .section-sub{
+    font-size:11px;
+    color:#888;
+    white-space:nowrap;
+  }
+
+  details{
+    position:relative;
+    border-top:1px solid var(--line);
+  }
+
+  details:last-child{
+    border-bottom:1px solid var(--line);
+  }
+
+  summary{
+    list-style:none;
+    cursor:pointer;
+    display:grid;
+    grid-template-columns:42px 1fr 28px;
+    align-items:start;
+    gap:12px;
+    padding:20px 0;
+  }
+  summary::-webkit-details-marker{display:none}
+
+  .index{
+    width:36px;
+    height:36px;
+    border:1px solid #a9b5b2;
+    display:grid;
+    place-items:center;
+    font-size:12px;
+    font-weight:950;
+    color:var(--teal);
+    background:#f6faf7;
+  }
+
+  .qwrap{padding-top:1px}
+  .qlabel{
+    font-size:10px;
+    color:var(--orange);
+    font-weight:950;
+    letter-spacing:.08em;
+    margin-bottom:5px;
+  }
+  .qtext{
+    font-size:18px;
+    line-height:1.52;
+    font-weight:900;
+    letter-spacing:-.03em;
+  }
+
+  .plus{
+    font-size:24px;
+    line-height:1;
+    color:#777;
+    margin-top:5px;
+    transition:.2s ease;
+  }
+  details[open] .plus{transform:rotate(45deg)}
+
+  .answer{
+    margin:-2px 0 20px 54px;
+    padding:17px 18px 18px;
+    background:var(--soft);
+    border-left:3px solid var(--teal);
+    color:#455352;
+    font-size:15px;
+    line-height:1.78;
+  }
+
+  .answer .one{
+    display:block;
+    color:var(--ink);
+    font-size:16px;
+    line-height:1.55;
+    font-weight:900;
+    margin-bottom:8px;
+  }
+
+  .answer strong{color:var(--ink)}
+
+  .last-check{
+    padding:26px 20px 30px 38px;
+  }
+
+  .check-box{
+    background:#183f42;
+    color:white;
+    padding:22px 20px;
+  }
+
+  .check-top{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    font-size:11px;
+    color:#d9e8e6;
+    font-weight:900;
+    letter-spacing:.07em;
+    margin-bottom:9px;
+  }
+
+  .check-mark{
+    width:21px;height:21px;
+    border:1px solid rgba(255,255,255,.55);
+    display:grid;
+    place-items:center;
+    font-size:13px;
+  }
+
+  .check-text{
+    font-size:21px;
+    line-height:1.55;
+    letter-spacing:-.04em;
+    font-weight:900;
+  }
+
+  .check-desc{
+    margin-top:11px;
+    color:#d1dddb;
+    font-size:14px;
+    line-height:1.7;
+  }
+
+  .footer{
+    padding:18px 20px 22px 38px;
+    border-top:1px solid var(--line);
+    color:#8c918e;
+    font-size:11.5px;
+    line-height:1.7;
+    display:flex;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width:520px){
+    .page{padding:10px 8px 36px}
+    .sheet:before{left:16px}
+    .header{padding-left:28px}
+    .hero{padding:30px 18px 26px 28px}
+    .notice{margin-left:28px;margin-right:14px}
+    .notice .big{font-size:22px}
+    .question-area{padding:27px 14px 8px 28px}
+    .last-check{padding:24px 14px 28px 28px}
+    .footer{padding-left:28px}
+    .intro{font-size:16px}
+    .qtext{font-size:17px}
+    .answer{margin-left:0}
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <section class="sheet">
+
+      <header class="header">
+        <div class="brand">우리동네 조사단</div>
+        <div class="stamp">RESIDENT<br>BRIEF</div>
+      </header>
+
+      <section class="hero">
+        <div class="overline">마지막 임무 완료</div>
+
+        <h1>
+          조사단의 임무는<br>끝났습니다.
+          <span class="pause">그런데, 잠깐만요.</span>
+        </h1>
+
+        <p class="intro">
+          방금까지는 <strong>조사하는 사람의 입장</strong>에서
+          고준위 방사성폐기물을 살펴봤습니다.<br>
+          이제 명찰을 뒤집은 당신은 <strong>주민</strong>입니다.
+        </p>
+
+        <div class="role-strip">
+          <span class="role-old">조사단</span>
+          <span class="arrow">→</span>
+          <span class="role-new">주민</span>
+        </div>
+      </section>
+
+      <section class="notice">
+        <div class="small">주민에게 남은 확인사항</div>
+        <div class="big">
+          주민분에게는<br>
+          <b>3가지 질문</b>이 더 남았습니다.
+        </div>
+      </section>
+
+      <section class="question-area">
+        <div class="section-head">
+          <h2 class="section-title">하나씩 열어 확인해 보세요.</h2>
+          <div class="section-sub">약 30초</div>
+        </div>
+
+        <details>
+          <summary>
+            <div class="index">01</div>
+            <div class="qwrap">
+              <div class="qlabel">QUESTION</div>
+              <div class="qtext">깊은 곳이면 아무 데나 가능한가요?</div>
+            </div>
+            <div class="plus">+</div>
+          </summary>
+          <div class="answer">
+            <span class="one">아니요. ‘깊다’는 조건 하나만으로 결정할 수 없습니다.</span>
+            실제로는 <strong>암반의 상태, 균열이 어떻게 이어지는지,
+            지하수가 어떻게 움직이는지</strong> 등을 함께 조사해야 합니다.
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <div class="index">02</div>
+            <div class="qwrap">
+              <div class="qlabel">QUESTION</div>
+              <div class="qtext">보이지 않는 땅속은 어떻게 확인하나요?</div>
+            </div>
+            <div class="plus">+</div>
+          </summary>
+          <div class="answer">
+            <span class="one">지질과 암반을 단계적으로 조사해 지하의 상태를 확인합니다.</span>
+            시추와 지질조사 등을 통해 암반을 살펴보고,
+            특히 <strong>균열의 연결성과 지하수의 이동</strong>을 함께 확인합니다.
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <div class="index">03</div>
+            <div class="qwrap">
+              <div class="qlabel">QUESTION</div>
+              <div class="qtext">주민은 무엇을 확인할 수 있어야 하나요?</div>
+            </div>
+            <div class="plus">+</div>
+          </summary>
+          <div class="answer">
+            <span class="one">결론뿐 아니라, 그 결론에 이르는 정보와 과정도 중요합니다.</span>
+            무엇을 조사했는지, 어떤 결과가 나왔는지,
+            앞으로 어떤 절차를 거치는지처럼
+            <strong>판단에 필요한 정보를 확인하고 질문할 수 있어야 합니다.</strong>
+          </div>
+        </details>
+      </section>
+
+      <section class="last-check">
+        <div class="check-box">
+          <div class="check-top">
+            <div class="check-mark">✓</div>
+            오늘의 마지막 확인
+          </div>
+          <div class="check-text">
+            조사단이 확인한 정보는<br>
+            결국 주민이 이해해야 할 정보입니다.
+          </div>
+          <div class="check-desc">
+            「우리동네 조사단」은 특정 답을 고르는 체험이 아니라,
+            무엇을 확인하고 질문해야 하는지 알아가는 전시입니다.
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>우리동네 조사단</span>
+        <span>조사단으로 들어와, 주민으로 나갑니다.</span>
+      </footer>
+
+    </section>
+  </main>
+</body>
+</html>
