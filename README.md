@@ -10,4 +10,6 @@
 
 로컬 확인: `python3 -m http.server 8000`
 
-주아체는 SIL Open Font License 1.1로 제공됩니다. 라이선스는 `Jua-OFL.txt`에 포함되어 있습니다.
+현재 글꼴은 NAVER의 나눔스퀘어라운드입니다. 글꼴 출처: https://hangeul.naver.com/font
+웹폰트 제공: https://github.com/innks/NanumSquareRound
+글꼴에 포함된 저작권 정보는 `NanumSquareRound-LICENSE.txt`에 보존했습니다.
