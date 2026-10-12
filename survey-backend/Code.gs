@@ -35,6 +35,7 @@ function doPost(e) {
     const raw = e && e.postData && e.postData.contents;
     if (!raw || raw.length > 12000) return json_({ok:false,error:'잘못된 요청'});
     const data = JSON.parse(raw);
+    if(data.action === "adminComments") return adminComments_(data);
     if (!/^[a-f0-9-]{36}$/i.test(data.id) || !Array.isArray(data.ratings) || data.ratings.length !== 5 || !data.ratings.every(n=>Number.isInteger(n)&&n>=1&&n<=5) || typeof data.comment !== 'string' || data.comment.length > 1000) return json_({ok:false,error:'잘못된 응답'});
     lock=LockService.getScriptLock();lock.waitLock(15000);
     const sheet=getResponseSheet_();
@@ -47,4 +48,17 @@ function doPost(e) {
     return json_({ok:true});
   } catch(e){return json_({ok:false,error:'저장하지 못했습니다.'});}
   finally{if(lock&&lock.hasLock())lock.releaseLock();}
+}
+
+// 운영자 조회: secret lives only in Apps Script properties, never in GitHub.
+function adminComments_(data) {
+  const expected=PropertiesService.getScriptProperties().getProperty('ADMIN_TOKEN');
+  if(!expected || expected.length<32 || typeof data.token!=='string' || data.token!==expected)return json_({ok:false,error:'운영자 인증이 필요합니다'});
+  const page=Number.isInteger(data.page)&&data.page>=0?data.page:0;
+  const sheet=getResponseSheet_();
+  const rows=Math.max(0,sheet.getLastRow()-1);
+  const values=rows?sheet.getRange(2,1,rows,8).getValues():[];
+  const comments=values.filter(row=>typeof row[7]==='string'&&row[7].trim()).reverse();
+  const selected=comments.slice(page*50,page*50+50).map(row=>({time:row[0] instanceof Date?row[0].toISOString():String(row[0]),comment:row[7],ratings:row.slice(2,7)}));
+  return json_({ok:true,total:comments.length,page:page,pageSize:50,comments:selected});
 }
