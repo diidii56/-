@@ -36,6 +36,7 @@ function doPost(e) {
     if (!raw || raw.length > 12000) return json_({ok:false,error:'잘못된 요청'});
     const data = JSON.parse(raw);
     if(data.action === "adminComments") return adminComments_(data);
+    if(data.action === "adminReset") return adminReset_(data);
     if (!/^[a-f0-9-]{36}$/i.test(data.id) || !Array.isArray(data.ratings) || data.ratings.length !== 5 || !data.ratings.every(n=>Number.isInteger(n)&&n>=1&&n<=5) || typeof data.comment !== 'string' || data.comment.length > 1000) return json_({ok:false,error:'잘못된 응답'});
     lock=LockService.getScriptLock();lock.waitLock(15000);
     const sheet=getResponseSheet_();
@@ -61,4 +62,33 @@ function adminComments_(data) {
   const comments=values.filter(row=>typeof row[7]==='string'&&row[7].trim()).reverse();
   const selected=comments.slice(page*50,page*50+50).map(row=>({time:row[0] instanceof Date?row[0].toISOString():String(row[0]),comment:row[7],ratings:row.slice(2,7)}));
   return json_({ok:true,total:comments.length,page:page,pageSize:50,comments:selected});
+}
+
+function adminReset_(data) {
+  const props=PropertiesService.getScriptProperties();
+  const expected=props.getProperty('ADMIN_TOKEN');
+  if(!expected || expected.length<32 || typeof data.token!=='string' || data.token!==expected)return json_({ok:false,error:'운영자 인증이 필요합니다'});
+  if(data.confirm!=='RESET_SURVEY' || !/^[a-f0-9-]{36}$/i.test(data.requestId))return json_({ok:false,error:'초기화 확인이 필요합니다'});
+  const lock=LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+    if(props.getProperty('LAST_RESET_ID')===data.requestId){
+      return json_({ok:true,duplicate:true,backup:props.getProperty('LAST_RESET_BACKUP')||''});
+    }
+    const sheet=getResponseSheet_();
+    const rows=Math.max(0,sheet.getLastRow()-1);
+    let backupName='';
+    if(rows){
+      backupName='응답백업_'+Utilities.formatDate(new Date(),'Asia/Seoul','yyyyMMdd_HHmmss')+'_'+Utilities.getUuid().slice(0,8);
+      // 백업에 성공한 뒤에만 원본 응답을 비웁니다.
+      sheet.copyTo(sheet.getParent()).setName(backupName);
+      SpreadsheetApp.flush();
+      sheet.getRange(2,1,rows,8).clearContent();
+      SpreadsheetApp.flush();
+    }
+    props.setProperty('LAST_RESET_ID',data.requestId);
+    props.setProperty('LAST_RESET_BACKUP',backupName);
+    return json_({ok:true,backup:backupName,cleared:rows});
+  } catch(e){return json_({ok:false,error:'초기화를 완료하지 못했습니다. 스프레드시트를 확인해주세요.'});}
+  finally{if(lock.hasLock())lock.releaseLock();}
 }
