@@ -17,10 +17,15 @@ function json_(data) {return ContentService.createTextOutput(JSON.stringify(data
 function doGet() {
   try {
     const sheet = getResponseSheet_();
-    const count = Math.max(0, sheet.getLastRow()-1);
+    const rows = Math.max(0, sheet.getLastRow()-1);
     const sums = [0,0,0,0,0];
-    if (count) sheet.getRange(2,3,count,5).getValues().forEach(row=>row.forEach((n,i)=>sums[i]+=Number(n)));
-    return json_({ok:true,count:count,averages:sums.map(n=>count?n/count:0)});
+    let count=0,opinionCount=0;
+    if (rows) sheet.getRange(2,3,rows,5).getValues().forEach(row=>{
+      if(row.every(n=>typeof n==='number'&&Number.isInteger(n)&&n>=1&&n<=5)){
+        count++;row.forEach((n,i)=>sums[i]+=n);
+      }else if(row.every(n=>n===''))opinionCount++;
+    });
+    return json_({ok:true,count:count,opinionCount:opinionCount,averages:sums.map(n=>count?n/count:0)});
   } catch (e) {return json_({ok:false,error:'집계를 사용할 수 없습니다.'});}
 }
 function doPost(e) {
@@ -29,14 +34,15 @@ function doPost(e) {
     const raw = e && e.postData && e.postData.contents;
     if (!raw || raw.length > 12000) return json_({ok:false,error:'잘못된 요청'});
     const data = JSON.parse(raw);
-    if (!/^[a-f0-9-]{36}$/i.test(data.id) || !Array.isArray(data.ratings) || data.ratings.length !== 5 || !data.ratings.every(n=>Number.isInteger(n)&&n>=1&&n<=5) || typeof data.comment !== 'string' || data.comment.length > 1000) return json_({ok:false,error:'잘못된 응답'});
+    if (!/^[a-f0-9-]{36}$/i.test(data.id) || !Array.isArray(data.ratings) || data.ratings.length !== 5 || !(data.ratings.every(n=>Number.isInteger(n)&&n>=1&&n<=5)||data.ratings.every(n=>n===null)) || typeof data.comment !== 'string' || data.comment.length > 1000) return json_({ok:false,error:'잘못된 응답'});
+    if(data.ratings.every(n=>n===null)&&!data.comment.trim())return json_({ok:false,error:'자유 의견을 입력해주세요'});
     lock=LockService.getScriptLock();lock.waitLock(15000);
     const sheet=getResponseSheet_();
     const count=sheet.getLastRow()-1;
     if(count && sheet.getRange(2,2,count,1).createTextFinder(data.id).matchEntireCell(true).findNext())return json_({ok:true,duplicate:true});
     // 시트 수식으로 해석되지 않도록 자유 의견을 텍스트로 저장합니다.
     const safeComment = /^[=+\-@]/.test(data.comment) ? "'"+data.comment : data.comment;
-    sheet.appendRow([new Date(),data.id].concat(data.ratings,[safeComment]));
+    sheet.appendRow([new Date(),data.id].concat(data.ratings.map(n=>n===null?'':n),[safeComment]));
     SpreadsheetApp.flush();
     return json_({ok:true});
   } catch(e){return json_({ok:false,error:'저장하지 못했습니다.'});}
