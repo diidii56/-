@@ -1,0 +1,44 @@
+// 이 코드는 설문 응답을 저장할 Google 스프레드시트의 확장 프로그램 → Apps Script에 붙여 넣습니다.
+function setup() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('스프레드시트에서 Apps Script를 열어 실행하세요.');
+  PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
+  getResponseSheet_();
+}
+function getResponseSheet_() {
+  const id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  if (!id) throw new Error('setup을 먼저 실행하세요.');
+  const ss = SpreadsheetApp.openById(id);
+  let sheet = ss.getSheetByName('만족도응답');
+  if (!sheet) {sheet = ss.insertSheet('만족도응답');sheet.appendRow(['제출시각','응답번호','이해도','흥미도','진행만족','정보도움','전반적만족','자유의견']);sheet.setFrozenRows(1);}
+  return sheet;
+}
+function json_(data) {return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);}
+function doGet() {
+  try {
+    const sheet = getResponseSheet_();
+    const count = Math.max(0, sheet.getLastRow()-1);
+    const sums = [0,0,0,0,0];
+    if (count) sheet.getRange(2,3,count,5).getValues().forEach(row=>row.forEach((n,i)=>sums[i]+=Number(n)));
+    return json_({ok:true,count:count,averages:sums.map(n=>count?n/count:0)});
+  } catch (e) {return json_({ok:false,error:'집계를 사용할 수 없습니다.'});}
+}
+function doPost(e) {
+  let lock;
+  try {
+    const raw = e && e.postData && e.postData.contents;
+    if (!raw || raw.length > 12000) return json_({ok:false,error:'잘못된 요청'});
+    const data = JSON.parse(raw);
+    if (!/^[a-f0-9-]{36}$/i.test(data.id) || !Array.isArray(data.ratings) || data.ratings.length !== 5 || !data.ratings.every(n=>Number.isInteger(n)&&n>=1&&n<=5) || typeof data.comment !== 'string' || data.comment.length > 1000) return json_({ok:false,error:'잘못된 응답'});
+    lock=LockService.getScriptLock();lock.waitLock(15000);
+    const sheet=getResponseSheet_();
+    const count=sheet.getLastRow()-1;
+    if(count && sheet.getRange(2,2,count,1).createTextFinder(data.id).matchEntireCell(true).findNext())return json_({ok:true,duplicate:true});
+    // 시트 수식으로 해석되지 않도록 자유 의견을 텍스트로 저장합니다.
+    const safeComment = /^[=+\-@]/.test(data.comment) ? "'"+data.comment : data.comment;
+    sheet.appendRow([new Date(),data.id].concat(data.ratings,[safeComment]));
+    SpreadsheetApp.flush();
+    return json_({ok:true});
+  } catch(e){return json_({ok:false,error:'저장하지 못했습니다.'});}
+  finally{if(lock&&lock.hasLock())lock.releaseLock();}
+}
