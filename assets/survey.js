@@ -11,6 +11,23 @@
   let pendingId=previous?.id||crypto.randomUUID(),submitted=previous?.submitted===true;
   const valid=/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint);
   if(!valid){button.disabled=true;status.textContent='만족도 조사는 현재 준비 중입니다.';return;}
-  if(submitted){button.disabled=true;status.textContent='이 브라우저에서 이미 평가를 제출했습니다. 참여해주셔서 감사합니다.'}
+  if(submitted){
+    button.disabled=true;button.textContent='평가 제출 완료';
+    form.querySelectorAll('input,textarea').forEach(input=>input.disabled=true);
+    status.textContent='이미 제출한 평가입니다.';
+    const dialog=document.createElement('dialog');
+    dialog.className='survey-notice';
+    dialog.setAttribute('aria-labelledby','survey-notice-title');
+    dialog.setAttribute('aria-describedby','survey-notice-description');
+    dialog.innerHTML='<div class="survey-notice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-8"/></svg></div><h2 id="survey-notice-title">이미 참여해주셨어요!</h2><p id="survey-notice-description">이 브라우저에서 이미 평가를 제출했습니다.<br>참여해주셔서 감사합니다.</p><button type="button" autofocus>확인</button>';
+    document.body.append(dialog);
+    dialog.querySelector('button').addEventListener('click',()=>dialog.close());
+    dialog.addEventListener('close',()=>{root.tabIndex=-1;root.focus({preventScroll:true});dialog.remove();});
+    // 설문 영역을 볼 때 한 번만 안내합니다.
+    const observer=new IntersectionObserver(entries=>{
+      if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();dialog.showModal();}
+    },{threshold:0});
+    observer.observe(root);
+  }
   form.addEventListener('submit',async e=>{e.preventDefault();if(submitted||!form.reportValidity())return;const values=new FormData(form);const ratings=items.map((_,i)=>Number(values.get('q'+i)));button.disabled=true;root.setAttribute('aria-busy','true');status.textContent='평가를 전송하고 있습니다…';try{try{localStorage.setItem('neighborhood-survey-submission',JSON.stringify({id:pendingId,submitted:false}))}catch{}const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({id:pendingId,ratings,comment:root.querySelector('textarea').value.trim()}),signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error();const result=await response.json();if(!result.ok)throw Error();submitted=true;try{localStorage.setItem('neighborhood-survey-submission',JSON.stringify({id:pendingId,submitted:true}))}catch{}status.textContent='평가가 제출되었습니다. 의견을 나눠주셔서 감사합니다!';button.textContent='제출 완료';form.querySelectorAll('input,textarea').forEach(x=>x.disabled=true);}catch{status.textContent='제출을 확인하지 못했습니다. 다시 눌러주세요. 같은 응답은 중복 저장하지 않습니다.';button.disabled=false}finally{root.removeAttribute('aria-busy')}});
 })();
