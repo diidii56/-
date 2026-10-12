@@ -17,10 +17,16 @@ function json_(data) {return ContentService.createTextOutput(JSON.stringify(data
 function doGet() {
   try {
     const sheet = getResponseSheet_();
-    const count = Math.max(0, sheet.getLastRow()-1);
+    const rows = Math.max(0, sheet.getLastRow()-1);
     const sums = [0,0,0,0,0];
-    if (count) sheet.getRange(2,3,count,5).getValues().forEach(row=>row.forEach((n,i)=>sums[i]+=Number(n)));
-    return json_({ok:true,count:count,averages:sums.map(n=>count?n/count:0)});
+    const distributions = Array.from({length:5},()=>[0,0,0,0,0]);
+    let count=0,opinionCount=0;
+    if(rows) sheet.getRange(2,3,rows,5).getValues().forEach(row=>{
+      if(row.every(n=>typeof n==='number'&&Number.isInteger(n)&&n>=1&&n<=5)){
+        count++;row.forEach((n,i)=>{sums[i]+=n;distributions[i][n-1]++;});
+      }else if(row.every(n=>n==='')) opinionCount++;
+    });
+    return json_({ok:true,count:count,opinionCount:opinionCount,averages:sums.map(n=>count?n/count:0),distributions:distributions});
   } catch (e) {return json_({ok:false,error:'집계를 사용할 수 없습니다.'});}
 }
 function doPost(e) {

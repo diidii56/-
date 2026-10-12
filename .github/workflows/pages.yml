@@ -23,7 +23,7 @@ jobs:
       - name: Prepare public files
         run: |
           mkdir _site
-          cp index.html Jua-OFL.txt NanumSquareRound-LICENSE.txt _site/
+          cp index.html stats.html Jua-OFL.txt NanumSquareRound-LICENSE.txt _site/
           cp -R assets _site/
       - uses: actions/upload-pages-artifact@v3
         with:
